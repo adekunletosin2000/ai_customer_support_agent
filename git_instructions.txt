@@ -1,0 +1,11 @@
+# Git push instructions for team (example)
+# Setup
+git init
+git add .
+git commit -m "Initial prototype"
+# Add remote (example GitHub)
+git remote add origin git@github.com:your-org/ai-agents-prototype.git
+git branch -M main
+git push -u origin main
+
+# To assign files to team members: tell A to push agents/intent_agent.py, B to push agents/knowledge_search.py, etc.
