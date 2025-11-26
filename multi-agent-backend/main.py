@@ -399,10 +399,13 @@ Always use the tools to make informed decisions.""",
 
 print("✅ Hybrid support agent created with 7 AI-powered tools")
 
-# Create session service and runner
+# Create session service and runner - FIXED VERSION
 session_service = InMemorySessionService()
+
+# CRITICAL FIX: Use app_name and agent parameters instead of app
 runner = Runner(
-    app=support_agent,
+    app_name="multi_agent_support",
+    agent=support_agent,
     session_service=session_service
 )
 

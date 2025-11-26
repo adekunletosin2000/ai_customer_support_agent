@@ -3,12 +3,15 @@ import { Send, Bot, User, Zap, MessageSquare, Brain, Search, AlertCircle, Trendi
 
 const MultiAgentSupportUI = () => {
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: 'Hi! How can I help you today? I have 11 AI agents ready to assist you.', timestamp: new Date() }
+    { role: 'assistant', content: 'Hi! How can I help you today? I have 7 AI agents ready to assist you.', timestamp: new Date() }
   ]);
   const [input, setInput] = useState('');
   const [activeAgents, setActiveAgents] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
+  const [sessionId, setSessionId] = useState(null);
+  const [userId, setUserId] = useState(null);
+  const [connectionStatus, setConnectionStatus] = useState('connecting');
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -19,62 +22,112 @@ const MultiAgentSupportUI = () => {
     scrollToBottom();
   }, [messages, isProcessing]);
 
+  // Initialize session on mount
+  useEffect(() => {
+    initializeSession();
+  }, []);
+
   const allAgents = [
-    { id: 'orchestrator', name: 'Orchestrator', icon: Bot, color: 'bg-gray-700', description: 'Coordinates all agents' },
     { id: 'intent', name: 'Intent Detection', icon: Brain, color: 'bg-purple-500', description: 'Understands what customer wants' },
-    { id: 'classifier', name: 'Classifier', icon: FileText, color: 'bg-blue-500', description: 'Categorizes the request' },
+    { id: 'classifier', name: 'Issue Classifier', icon: FileText, color: 'bg-blue-500', description: 'Categorizes the request' },
     { id: 'sentiment', name: 'Sentiment Analysis', icon: TrendingUp, color: 'bg-pink-500', description: 'Detects customer emotion' },
     { id: 'knowledge', name: 'Knowledge Search', icon: Search, color: 'bg-green-500', description: 'Finds relevant information' },
     { id: 'troubleshooting', name: 'Troubleshooting', icon: Zap, color: 'bg-yellow-500', description: 'Solves technical issues' },
-    { id: 'response', name: 'Response Generator', icon: MessageSquare, color: 'bg-indigo-500', description: 'Creates the answer' },
-    { id: 'escalation', name: 'Escalation', icon: AlertCircle, color: 'bg-red-500', description: 'Flags urgent issues' },
-    { id: 'summarization', name: 'Summarization', icon: FileText, color: 'bg-cyan-500', description: 'Summarizes conversation' },
-    { id: 'analytics', name: 'Analytics', icon: Activity, color: 'bg-orange-500', description: 'Tracks patterns' },
-    { id: 'user_profile', name: 'User Profiling', icon: UserCheck, color: 'bg-teal-500', description: 'Understands customer history' }
+    { id: 'escalation_check', name: 'Escalation Checker', icon: AlertCircle, color: 'bg-red-500', description: 'Flags urgent issues' },
+    { id: 'escalate_human', name: 'Human Escalation', icon: UserCheck, color: 'bg-orange-500', description: 'Transfers to human agent' }
   ];
 
-  const callBackendAPI = async (userMessage) => {
-    setIsProcessing(true);
-    setActiveAgents([]);
-    setError(null);
-
-    // Animate agent activation
-    const agentSequence = ['orchestrator', 'intent', 'classifier', 'sentiment', 'knowledge', 'troubleshooting', 'response', 'analytics', 'user_profile'];
-    
-    for (let i = 0; i < agentSequence.length; i++) {
-      await new Promise(resolve => setTimeout(resolve, 400));
-      setActiveAgents(prev => [...prev, agentSequence[i]]);
-    }
-
+  const initializeSession = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/chat', {
+      setConnectionStatus('connecting');
+      const response = await fetch('http://localhost:5000/api/chat/start', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: userMessage })
+        body: JSON.stringify({})
       });
 
       if (!response.ok) {
-        throw new Error(`Server error: ${response.status}`);
+        throw new Error(`Failed to start session: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setSessionId(data.session_id);
+      setUserId(data.user_id);
+      setConnectionStatus('connected');
+      setError(null);
+      
+      console.log('✅ Session initialized:', data.session_id);
+    } catch (err) {
+      console.error('❌ Session initialization failed:', err);
+      setConnectionStatus('disconnected');
+      setError(err.message);
+    }
+  };
+
+  const callBackendAPI = async (userMessage) => {
+    if (!sessionId || !userId) {
+      setError('No active session. Reinitializing...');
+      await initializeSession();
+      return;
+    }
+
+    setIsProcessing(true);
+    setActiveAgents([]);
+    setError(null);
+
+    // Animate agent activation sequence
+    const agentSequence = ['intent', 'classifier', 'sentiment', 'knowledge', 'troubleshooting', 'escalation_check'];
+    
+    for (let i = 0; i < agentSequence.length; i++) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      setActiveAgents(prev => [...prev, agentSequence[i]]);
+    }
+
+    try {
+      const response = await fetch('http://localhost:5000/api/chat/message', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          session_id: sessionId,
+          user_id: userId,
+          message: userMessage
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Server error: ${response.status}`);
       }
 
       const data = await response.json();
       
+      // Check if escalation was triggered
+      if (data.metadata?.escalation_status === 'pending') {
+        setActiveAgents(prev => [...prev, 'escalate_human']);
+      }
+      
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: data.response,
+        content: data.agent_response,
         timestamp: new Date(),
-        agentsUsed: data.agents_used,
-        metadata: data.metadata
+        metadata: data.metadata,
+        messageCount: data.message_count
       }]);
 
+      setConnectionStatus('connected');
+
     } catch (err) {
-      console.error('API Error:', err);
+      console.error('❌ API Error:', err);
       setError(err.message);
+      setConnectionStatus('error');
+      
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: `❌ Error: Could not connect to backend server. Make sure Flask is running on http://localhost:5000\n\nError details: ${err.message}`,
+        content: `❌ Error: ${err.message}\n\nMake sure Flask server is running:\n1. Open terminal in backend folder\n2. Run: python app.py\n3. Server should start on http://localhost:5000`,
         timestamp: new Date(),
         isError: true
       }]);
@@ -97,10 +150,30 @@ const MultiAgentSupportUI = () => {
   };
 
   const quickActions = [
-    "My internet is not working",
+    "My internet is not working at all!",
     "I was charged twice on my bill",
     "How do I reset my password?"
   ];
+
+  const getConnectionStatusColor = () => {
+    switch (connectionStatus) {
+      case 'connected': return 'bg-green-500';
+      case 'connecting': return 'bg-yellow-500';
+      case 'disconnected':
+      case 'error': return 'bg-red-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  const getConnectionStatusText = () => {
+    switch (connectionStatus) {
+      case 'connected': return 'Connected';
+      case 'connecting': return 'Connecting...';
+      case 'disconnected': return 'Disconnected';
+      case 'error': return 'Error';
+      default: return 'Unknown';
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-4 md:p-6">
@@ -118,22 +191,36 @@ const MultiAgentSupportUI = () => {
                 Multi-Agent AI Support
               </h1>
               <p className="text-purple-200 text-sm md:text-base">
-                11 AI agents • Powered by Google Gemini • Real-time orchestration
+                7 AI agents • Powered by Google Gemini • Real-time orchestration
               </p>
             </div>
           </div>
           
           {/* Connection Status */}
-          {error && (
+          {error && connectionStatus !== 'connected' && (
             <div className="mt-3 bg-red-500/20 border border-red-400 rounded-lg p-3 text-red-200 text-sm">
-              ⚠️ Backend connection issue. Make sure Flask server is running: <code className="bg-black/30 px-2 py-1 rounded">python app.py</code>
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                <div>
+                  <div className="font-semibold">Backend Connection Issue</div>
+                  <div className="text-xs mt-1">
+                    Make sure Flask server is running: <code className="bg-black/30 px-2 py-1 rounded ml-1">python app.py</code>
+                  </div>
+                  <button 
+                    onClick={initializeSession}
+                    className="mt-2 bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-xs font-semibold"
+                  >
+                    Retry Connection
+                  </button>
+                </div>
+              </div>
             </div>
           )}
           
           {/* Stats Bar */}
-          <div className="grid grid-cols-3 gap-3 mt-4">
+          <div className="grid grid-cols-4 gap-3 mt-4">
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20">
-              <div className="text-2xl font-bold text-white">{messages.length}</div>
+              <div className="text-2xl font-bold text-white">{messages.length - 1}</div>
               <div className="text-xs text-purple-200">Messages</div>
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20">
@@ -142,8 +229,13 @@ const MultiAgentSupportUI = () => {
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20">
               <div className="flex items-center gap-2">
-                <div className={`w-3 h-3 rounded-full ${error ? 'bg-red-500' : 'bg-green-500'} animate-pulse`}></div>
-                <div className="text-xs text-purple-200">{error ? 'Disconnected' : 'Connected'}</div>
+                <div className={`w-3 h-3 rounded-full ${getConnectionStatusColor()} ${connectionStatus === 'connecting' ? 'animate-pulse' : ''}`}></div>
+                <div className="text-xs text-purple-200">{getConnectionStatusText()}</div>
+              </div>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20">
+              <div className="text-xs text-purple-200 truncate" title={sessionId}>
+                Session: {sessionId ? sessionId.slice(0, 8) + '...' : 'N/A'}
               </div>
             </div>
           </div>
@@ -184,21 +276,29 @@ const MultiAgentSupportUI = () => {
                       : 'bg-white text-gray-900 border-2 border-gray-200'
                   } rounded-2xl p-4 shadow-lg`}>
                     <p className="text-sm leading-relaxed whitespace-pre-line">{msg.content}</p>
-                    {msg.agentsUsed && (
+                    {msg.metadata && (
                       <div className="mt-3 pt-3 border-t border-gray-300">
                         <p className="text-xs text-gray-500 font-medium flex items-center gap-1">
                           <Zap className="w-3 h-3" />
-                          Agents used: {msg.agentsUsed.slice(0, 5).join(', ')}
-                          {msg.agentsUsed.length > 5 && ` +${msg.agentsUsed.length - 5} more`}
+                          {activeAgents.length} agents used
                         </p>
-                        {msg.metadata && (
+                        {msg.metadata.escalation_status && (
+                          <p className="text-xs text-gray-600 mt-1">
+                            Status: {msg.metadata.escalation_status}
+                            {msg.metadata.escalation_status === 'pending' && ' 🔄'}
+                            {msg.metadata.escalation_status === 'escalated' && ' ⚠️'}
+                          </p>
+                        )}
+                        {msg.messageCount && (
                           <p className="text-xs text-gray-400 mt-1">
-                            Priority: {msg.metadata.priority} | Category: {msg.metadata.category}
-                            {msg.metadata.escalated && ' | ⚠️ Escalated'}
+                            Message #{msg.messageCount}
                           </p>
                         )}
                       </div>
                     )}
+                    <div className="mt-2 text-xs text-gray-400">
+                      {msg.timestamp.toLocaleTimeString()}
+                    </div>
                   </div>
 
                   {msg.role === 'user' && (
@@ -227,26 +327,23 @@ const MultiAgentSupportUI = () => {
             </div>
 
             {/* Quick Actions */}
-            {messages.length <= 1 && (
+            {messages.length <= 1 && !isProcessing && (
               <div className="px-4 pb-2">
-                <div className="text-xs text-gray-500 mb-2">Quick actions:</div>
+                <div className="text-xs text-gray-500 mb-2 font-semibold">Quick actions:</div>
                 <div className="flex flex-wrap gap-2">
                   {quickActions.map((action, idx) => (
                     <button
                       key={idx}
                       onClick={() => {
-                        setInput(action);
-                        setTimeout(() => {
-                          setMessages(prev => [...prev, {
-                            role: 'user',
-                            content: action,
-                            timestamp: new Date()
-                          }]);
-                          callBackendAPI(action);
-                        }, 100);
+                        setMessages(prev => [...prev, {
+                          role: 'user',
+                          content: action,
+                          timestamp: new Date()
+                        }]);
+                        callBackendAPI(action);
                       }}
-                      className="text-xs bg-purple-100 hover:bg-purple-200 text-purple-700 px-3 py-2 rounded-lg transition-colors"
-                      disabled={isProcessing}
+                      className="text-xs bg-purple-100 hover:bg-purple-200 text-purple-700 px-3 py-2 rounded-lg transition-colors font-medium"
+                      disabled={isProcessing || !sessionId}
                     >
                       {action}
                     </button>
@@ -263,13 +360,13 @@ const MultiAgentSupportUI = () => {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                  placeholder="Type your message..."
+                  placeholder={sessionId ? "Type your message..." : "Connecting to server..."}
                   className="flex-1 bg-gray-100 border-2 border-gray-300 text-gray-900 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent transition-all"
-                  disabled={isProcessing}
+                  disabled={isProcessing || !sessionId}
                 />
                 <button
                   onClick={handleSend}
-                  disabled={isProcessing || !input.trim()}
+                  disabled={isProcessing || !input.trim() || !sessionId}
                   className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-xl px-6 py-3 font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 disabled:scale-100"
                 >
                   <Send className="w-5 h-5" />
@@ -303,7 +400,7 @@ const MultiAgentSupportUI = () => {
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-11 h-11 ${agent.color} rounded-xl flex items-center justify-center ${isActive ? 'animate-pulse' : ''} shadow-md`}>
+                      <div className={`w-11 h-11 ${agent.color} rounded-xl flex items-center justify-center ${isActive && !isCompleted ? 'animate-pulse' : ''} shadow-md`}>
                         <Icon className="w-6 h-6 text-white" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -323,6 +420,20 @@ const MultiAgentSupportUI = () => {
                   </div>
                 );
               })}
+            </div>
+
+            {/* Agent Stats Footer */}
+            <div className="p-4 bg-gray-50 border-t-2 border-gray-200">
+              <div className="text-xs text-gray-600">
+                <div className="flex justify-between mb-1">
+                  <span>Total Agents:</span>
+                  <span className="font-bold">{allAgents.length}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Currently Active:</span>
+                  <span className="font-bold text-purple-600">{activeAgents.length}</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
