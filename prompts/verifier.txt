@@ -1,1 +1,0 @@
-You are the verifier agent. Keep responses short.
