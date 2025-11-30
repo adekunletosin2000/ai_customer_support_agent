@@ -683,40 +683,49 @@ sudo cp -r dist/* /var/www/html/
 - [ ] Implement data encryption at rest
 
 ---
-
 ## 📝 API Documentation
 
-### Endpoints
+This API powers the multi-agent customer support system.  
+All endpoints use JSON over HTTP.
 
-#### 1. Start Session
-http
-POST /api/chat/start
+---
+
+## 🔹 1. Start Session
+POST /api/chat/start  
 Content-Type: application/json
 
-Request Body: {}
+Request Body:
+```json
+{}
+```
 
 Response:
+```json
 {
   "session_id": "550e8400-e29b-41d4-a716-446655440000",
   "user_id": "123e4567-e89b-12d3-a456-426614174000",
   "message": "Chat session created successfully",
   "timestamp": "2024-01-15T10:30:00Z"
 }
+```
 
+---
 
-#### 2. Send Message
-http
-POST /api/chat/message
+## 🔹 2. Send Message
+POST /api/chat/message  
 Content-Type: application/json
 
 Request Body:
+```json
 {
   "session_id": "550e8400-e29b-41d4-a716-446655440000",
   "user_id": "123e4567-e89b-12d3-a456-426614174000",
   "message": "My internet is not working"
 }
+```
 
 Response:
+```json
 {
   "agent_response": "I understand you're having internet issues...",
   "session_id": "550e8400-e29b-41d4-a716-446655440000",
@@ -727,13 +736,15 @@ Response:
   },
   "message_count": 1
 }
+```
 
+---
 
-#### 3. Get History
-http
+## 🔹 3. Get Chat History
 GET /api/chat/history/{session_id}
 
 Response:
+```json
 {
   "session_id": "550e8400-e29b-41d4-a716-446655440000",
   "user_id": "123e4567-e89b-12d3-a456-426614174000",
@@ -751,13 +762,15 @@ Response:
   ],
   "message_count": 2
 }
+```
 
+---
 
-#### 4. End Session
-http
+## 🔹 4. End Session
 POST /api/chat/end/{session_id}
 
 Response:
+```json
 {
   "message": "Chat session ended successfully",
   "session_id": "550e8400-e29b-41d4-a716-446655440000",
@@ -767,25 +780,29 @@ Response:
     "ended_at": "2024-01-15T10:40:00Z"
   }
 }
+```
 
+---
 
-#### 5. Health Check
-http
+## 🔹 5. Health Check
 GET /health
 
 Response:
+```json
 {
   "status": "healthy",
   "timestamp": "2024-01-15T10:30:00Z",
   "version": "1.0.0"
 }
+```
 
+---
 
-#### 6. Get Active Sessions (Admin)
-http
+## 🔹 6. Get Active Sessions (Admin)
 GET /api/sessions/active
 
 Response:
+```json
 {
   "active_sessions": 42,
   "sessions": [
@@ -797,7 +814,7 @@ Response:
     }
   ]
 }
-
+```
 
 ---
 
