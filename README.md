@@ -66,17 +66,17 @@ User Input → 7 Specialized Agents (parallel) → Orchestrated Response (85%+ a
 ### System Overview
 
 
-┌──────────────────────────────────────────────────────────────┐
-│                    PRESENTATION LAYER                        │
-│                    React Frontend (Vite)                     │
-│  • Real-time chat interface                                  │
-│  • Agent activity visualization                              │
-│  • Connection status monitoring                              │
-│  • Quick action buttons                                      │
-└───────────────────────┬──────────────────────────────────────┘
-                        │ REST API (HTTP/JSON)
-                        │ Port: 3000 → 5000
-┌───────────────────────▼──────────────────────────────────────┐
+┌──────────────────────────────────────────────────────────────┐<br>
+│                    PRESENTATION LAYER                        │<br>
+│                    React Frontend (Vite)                     │<br>
+│  • Real-time chat interface                                  │<br>
+│  • Agent activity visualization                              │<br>
+│  • Connection status monitoring                              │<br>
+│  • Quick action buttons                                      │<br>
+└───────────────────────┬──────────────────────────────────────┘<br>
+                        │ REST API (HTTP/JSON)<br>
+                        │ Port: 3000 → 5000<br>
+┌───────────────────────▼──────────────────────────────────────┐<br>
 │                    APPLICATION LAYER                         │
 │                    Flask REST API                            │
 │  • POST /api/chat/start       - Initialize session           │
