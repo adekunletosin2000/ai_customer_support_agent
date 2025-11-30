@@ -355,8 +355,7 @@ final_response = responses[-1]
 ---
 
 ## 📁 Project Structure
-
-
+<pre>
 agentic-ai-royson-main/
 ├── .qodo/                          # Qodo configuration
 ├── ai_customer_support_agent/      # Main project folder
@@ -392,7 +391,8 @@ agentic-ai-royson-main/
 │       └── vite.config.js
 │
 └── venv/                           # Python virtual environment
-
+</pre>
+****
 
 *Key Files*:
 - *app.py*: Flask REST API with session management
