@@ -67,8 +67,8 @@ User Input → 7 Specialized Agents (parallel) → Orchestrated Response (85%+ a
 
 
 ┌──────────────────────────────────────────────────────────────┐
-│                    PRESENTATION LAYER                         │
-│                    React Frontend (Vite)                      │
+│                    PRESENTATION LAYER                        │
+│                    React Frontend (Vite)                     │
 │  • Real-time chat interface                                  │
 │  • Agent activity visualization                              │
 │  • Connection status monitoring                              │
@@ -77,8 +77,8 @@ User Input → 7 Specialized Agents (parallel) → Orchestrated Response (85%+ a
                         │ REST API (HTTP/JSON)
                         │ Port: 3000 → 5000
 ┌───────────────────────▼──────────────────────────────────────┐
-│                    APPLICATION LAYER                          │
-│                    Flask REST API                             │
+│                    APPLICATION LAYER                         │
+│                    Flask REST API                            │
 │  • POST /api/chat/start       - Initialize session           │
 │  • POST /api/chat/message     - Send message                 │
 │  • GET  /api/chat/history/:id - Get conversation             │
@@ -88,8 +88,8 @@ User Input → 7 Specialized Agents (parallel) → Orchestrated Response (85%+ a
 └───────────────────────┬──────────────────────────────────────┘
                         │ Python SDK
 ┌───────────────────────▼──────────────────────────────────────┐
-│                  ORCHESTRATION LAYER                          │
-│                 Google ADK Runner                             │
+│                  ORCHESTRATION LAYER                         │
+│                 Google ADK Runner                            │
 │  • Agent lifecycle management                                │
 │  • Tool execution coordination                               │
 │  • Session persistence (InMemorySessionService)              │
@@ -98,16 +98,16 @@ User Input → 7 Specialized Agents (parallel) → Orchestrated Response (85%+ a
 └───────────────────────┬──────────────────────────────────────┘
                         │ Gemini API
 ┌───────────────────────▼──────────────────────────────────────┐
-│                      AGENT LAYER                              │
+│                      AGENT LAYER                             │
 │            Primary LLM Agent (Gemini 2.0 Flash)              │
-│                                                               │
-│  Tools:                                                       │
-│  ├─ search_knowledge_base(category: str)                    │
+│                                                              │
+│  Tools:                                                      │
+│  ├─ search_knowledge_base(category: str)                     │
 │  │   Returns: JSON with solutions array                      │
-│  │                                                            │
-│  └─ escalate_to_human(reason: str, message: str)            │
+│  │                                                           │
+│  └─ escalate_to_human(reason: str, message: str)             │
 │      Requires: Human-in-the-loop confirmation                │
-│                                                               │
+│                                                              │
 │  Virtual Sub-Agent Workflow (via prompting):                 │
 │  1. Intent Detection    → Parse user need                    │
 │  2. Classification      → Categorize issue type              │
