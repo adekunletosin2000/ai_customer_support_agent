@@ -69,39 +69,39 @@ User Input → 7 Specialized Agents (parallel) → Orchestrated Response (85%+ a
 
 <pre>
 ┌──────────────────────────────────────────────────────────────┐<br>
-│                PRESENTATION LAYER                             │<br>
-│                React Frontend (Vite)                           │<br>
-│        • Real-time chat interface                              │<br>
-│        • Agent activity visualization                          │<br>
-│        • Connection status monitoring                          │<br>
-│        • Quick action buttons                                  │<br>
+│                PRESENTATION LAYER                            │<br>
+│                React Frontend (Vite)                         │<br>
+│        • Real-time chat interface                            │<br>
+│        • Agent activity visualization                        │<br>
+│        • Connection status monitoring                        │<br>
+│        • Quick action buttons                                │<br>
 └───────────────────────┬──────────────────────────────────────┘<br>
                         │ REST API (HTTP/JSON)<br>
                         │ Port: 3000 → 5000<br>
 ┌───────────────────────▼──────────────────────────────────────┐<br>
-│                APPLICATION LAYER                              │<br>
-│                Flask REST API                                 │<br>
-│        • POST /api/chat/start       - Initialize session      │<br>
-│        • POST /api/chat/message     - Send message            │<br>
-│        • GET  /api/chat/history/:id - Get conversation        │<br>
-│        • POST /api/chat/end/:id     - End session             │<br>
-│        • GET  /api/sessions/active  - Admin view              │<br>
-│        • GET  /health               - Health check            │<br>
+│                APPLICATION LAYER                             │<br>
+│                Flask REST API                                │<br>
+│        • POST /api/chat/start       - Initialize session     │<br>
+│        • POST /api/chat/message     - Send message           │<br>
+│        • GET  /api/chat/history/:id - Get conversation       │<br>
+│        • POST /api/chat/end/:id     - End session            │<br>
+│        • GET  /api/sessions/active  - Admin view             │<br>
+│        • GET  /health               - Health check           │<br>
 └───────────────────────┬──────────────────────────────────────┘<br>
                         │ Python SDK<br>
 ┌───────────────────────▼──────────────────────────────────────┐<br>
 │                ORCHESTRATION LAYER                           │<br>
-│                Google ADK Runner                              │<br>
-│        • Agent lifecycle management                           │<br>
-│        • Tool execution coordination                          │<br>
-│        • Session persistence (InMemorySessionService)         │<br>
-│        • Event streaming                                      │<br>
-│        • Error handling & retry logic                         │<br>
+│                Google ADK Runner                             │<br>
+│        • Agent lifecycle management                          │<br>
+│        • Tool execution coordination                         │<br>
+│        • Session persistence (InMemorySessionService)        │<br>
+│        • Event streaming                                     │<br>
+│        • Error handling & retry logic                        │<br>
 └───────────────────────┬──────────────────────────────────────┘<br>
                         │ Gemini API<br>
 ┌───────────────────────▼──────────────────────────────────────┐<br>
 │                AGENT LAYER                                   │<br>
-│                Primary LLM Agent (Gemini 2.0 Flash)           │<br>
+│                Primary LLM Agent (Gemini 2.0 Flash)          │<br>
 │                                                              │<br>
 │        Tools:                                                │<br>
 │        ├─ search_knowledge_base(category: str)               │<br>
