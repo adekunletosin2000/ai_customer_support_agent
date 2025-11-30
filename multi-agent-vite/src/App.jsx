@@ -13,6 +13,7 @@ const MultiAgentSupportUI = () => {
   const [userId, setUserId] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState('connecting');
   const messagesEndRef = useRef(null);
+  const initializingRef = useRef(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -22,9 +23,10 @@ const MultiAgentSupportUI = () => {
     scrollToBottom();
   }, [messages, isProcessing]);
 
-  // Initialize session on mount
   useEffect(() => {
-    initializeSession();
+    if (!sessionId && !initializingRef.current) {
+      initializeSession();
+    }
   }, []);
 
   const allAgents = [
@@ -38,8 +40,17 @@ const MultiAgentSupportUI = () => {
   ];
 
   const initializeSession = async () => {
+    if (initializingRef.current) {
+      console.log('Already initializing session, skipping...');
+      return false;
+    }
+
+    initializingRef.current = true;
+
     try {
       setConnectionStatus('connecting');
+      console.log('🔄 Initializing session...');
+      
       const response = await fetch('http://localhost:5000/api/chat/start', {
         method: 'POST',
         headers: {
@@ -59,25 +70,33 @@ const MultiAgentSupportUI = () => {
       setError(null);
       
       console.log('✅ Session initialized:', data.session_id);
+      console.log('✅ User ID:', data.user_id);
+      return true;
     } catch (err) {
       console.error('❌ Session initialization failed:', err);
       setConnectionStatus('disconnected');
       setError(err.message);
+      return false;
+    } finally {
+      initializingRef.current = false;
     }
   };
 
   const callBackendAPI = async (userMessage) => {
     if (!sessionId || !userId) {
+      console.error('❌ No session available');
       setError('No active session. Reinitializing...');
-      await initializeSession();
-      return;
+      const success = await initializeSession();
+      if (!success) return;
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
 
     setIsProcessing(true);
     setActiveAgents([]);
     setError(null);
 
-    // Animate agent activation sequence
+    console.log('📤 Sending message with:', { sessionId, userId, message: userMessage });
+
     const agentSequence = ['intent', 'classifier', 'sentiment', 'knowledge', 'troubleshooting', 'escalation_check'];
     
     for (let i = 0; i < agentSequence.length; i++) {
@@ -98,21 +117,31 @@ const MultiAgentSupportUI = () => {
         })
       });
 
+      console.log('📥 Response status:', response.status);
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('❌ Error response:', errorData);
         throw new Error(errorData.error || `Server error: ${response.status}`);
       }
 
       const data = await response.json();
+      console.log('✅ Response data:', data);
       
-      // Check if escalation was triggered
       if (data.metadata?.escalation_status === 'pending') {
         setActiveAgents(prev => [...prev, 'escalate_human']);
       }
       
+      let responseContent = data.agent_response;
+      if (typeof responseContent === 'object' && responseContent !== null) {
+        responseContent = responseContent.content || 
+                         responseContent.text || 
+                         JSON.stringify(responseContent, null, 2);
+      }
+      
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: data.agent_response,
+        content: responseContent,
         timestamp: new Date(),
         metadata: data.metadata,
         messageCount: data.message_count
@@ -122,12 +151,25 @@ const MultiAgentSupportUI = () => {
 
     } catch (err) {
       console.error('❌ API Error:', err);
+      
+      const isSessionError = err.message.includes('Invalid session_id') || 
+                             err.message.includes('Session not found');
+      
+      if (isSessionError && !sessionId) {
+        setError('Session expired. Attempting to reconnect...');
+        const recovered = await initializeSession();
+        if (recovered) {
+          setTimeout(() => callBackendAPI(userMessage), 500);
+          return;
+        }
+      }
+      
       setError(err.message);
       setConnectionStatus('error');
       
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: `❌ Error: ${err.message}\n\nMake sure Flask server is running:\n1. Open terminal in backend folder\n2. Run: python app.py\n3. Server should start on http://localhost:5000`,
+        content: `❌ Error: ${err.message}\n\n${isSessionError ? '🔄 Attempting to reconnect...' : 'Please check:\n1. Flask server is running on http://localhost:5000\n2. Try refreshing the page'}`,
         timestamp: new Date(),
         isError: true
       }]);
@@ -139,14 +181,28 @@ const MultiAgentSupportUI = () => {
   const handleSend = () => {
     if (!input.trim() || isProcessing) return;
 
+    const userMessage = input.trim();
+    setInput('');
+
     setMessages(prev => [...prev, {
       role: 'user',
-      content: input,
+      content: userMessage,
       timestamp: new Date()
     }]);
 
-    callBackendAPI(input);
-    setInput('');
+    callBackendAPI(userMessage);
+  };
+
+  const handleQuickAction = (action) => {
+    if (isProcessing || !sessionId) return;
+
+    setMessages(prev => [...prev, {
+      role: 'user',
+      content: action,
+      timestamp: new Date()
+    }]);
+    
+    callBackendAPI(action);
   };
 
   const quickActions = [
@@ -179,7 +235,6 @@ const MultiAgentSupportUI = () => {
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-4 md:p-6">
       <div className="max-w-7xl mx-auto h-screen flex flex-col">
         
-        {/* Enhanced Header */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
             <div className="relative">
@@ -196,28 +251,33 @@ const MultiAgentSupportUI = () => {
             </div>
           </div>
           
-          {/* Connection Status */}
-          {error && connectionStatus !== 'connected' && (
-            <div className="mt-3 bg-red-500/20 border border-red-400 rounded-lg p-3 text-red-200 text-sm">
+          {(error || connectionStatus !== 'connected') && (
+            <div className={`mt-3 ${connectionStatus === 'connected' ? 'bg-green-500/20 border-green-400' : 'bg-red-500/20 border-red-400'} border rounded-lg p-3 ${connectionStatus === 'connected' ? 'text-green-200' : 'text-red-200'} text-sm`}>
               <div className="flex items-center gap-2">
                 <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                <div>
-                  <div className="font-semibold">Backend Connection Issue</div>
-                  <div className="text-xs mt-1">
-                    Make sure Flask server is running: <code className="bg-black/30 px-2 py-1 rounded ml-1">python app.py</code>
+                <div className="flex-1">
+                  <div className="font-semibold">
+                    {connectionStatus === 'connected' ? 'Connection Restored' : 'Backend Connection Issue'}
                   </div>
-                  <button 
-                    onClick={initializeSession}
-                    className="mt-2 bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-xs font-semibold"
-                  >
-                    Retry Connection
-                  </button>
+                  {connectionStatus !== 'connected' && (
+                    <div className="text-xs mt-1">
+                      Make sure Flask server is running: <code className="bg-black/30 px-2 py-1 rounded ml-1">python app.py</code>
+                    </div>
+                  )}
                 </div>
+                <button 
+                  onClick={() => {
+                    initializingRef.current = false;
+                    initializeSession();
+                  }}
+                  className={`${connectionStatus === 'connected' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'} px-3 py-1 rounded text-xs font-semibold whitespace-nowrap`}
+                >
+                  {connectionStatus === 'connecting' ? 'Connecting...' : connectionStatus === 'connected' ? 'Reconnect' : 'Retry Connection'}
+                </button>
               </div>
             </div>
           )}
           
-          {/* Stats Bar */}
           <div className="grid grid-cols-4 gap-3 mt-4">
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20">
               <div className="text-2xl font-bold text-white">{messages.length - 1}</div>
@@ -243,7 +303,6 @@ const MultiAgentSupportUI = () => {
 
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-0">
           
-          {/* Chat Interface */}
           <div className="lg:col-span-2 bg-white/95 backdrop-blur-xl rounded-3xl border border-white/40 shadow-2xl flex flex-col overflow-hidden">
             <div className="p-4 bg-gradient-to-r from-purple-600 to-indigo-600">
               <h2 className="text-xl font-bold flex items-center gap-2 text-white">
@@ -258,7 +317,6 @@ const MultiAgentSupportUI = () => {
               </h2>
             </div>
 
-            {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-gray-50 to-white">
               {messages.map((msg, idx) => (
                 <div key={idx} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}>
@@ -326,7 +384,6 @@ const MultiAgentSupportUI = () => {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Quick Actions */}
             {messages.length <= 1 && !isProcessing && (
               <div className="px-4 pb-2">
                 <div className="text-xs text-gray-500 mb-2 font-semibold">Quick actions:</div>
@@ -334,15 +391,8 @@ const MultiAgentSupportUI = () => {
                   {quickActions.map((action, idx) => (
                     <button
                       key={idx}
-                      onClick={() => {
-                        setMessages(prev => [...prev, {
-                          role: 'user',
-                          content: action,
-                          timestamp: new Date()
-                        }]);
-                        callBackendAPI(action);
-                      }}
-                      className="text-xs bg-purple-100 hover:bg-purple-200 text-purple-700 px-3 py-2 rounded-lg transition-colors font-medium"
+                      onClick={() => handleQuickAction(action)}
+                      className="text-xs bg-purple-100 hover:bg-purple-200 text-purple-700 px-3 py-2 rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                       disabled={isProcessing || !sessionId}
                     >
                       {action}
@@ -352,7 +402,6 @@ const MultiAgentSupportUI = () => {
               </div>
             )}
 
-            {/* Input */}
             <div className="p-4 bg-white border-t-2 border-gray-200">
               <div className="flex gap-2">
                 <input
@@ -361,13 +410,13 @@ const MultiAgentSupportUI = () => {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                   placeholder={sessionId ? "Type your message..." : "Connecting to server..."}
-                  className="flex-1 bg-gray-100 border-2 border-gray-300 text-gray-900 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent transition-all"
+                  className="flex-1 bg-gray-100 border-2 border-gray-300 text-gray-900 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent transition-all disabled:opacity-50"
                   disabled={isProcessing || !sessionId}
                 />
                 <button
                   onClick={handleSend}
                   disabled={isProcessing || !input.trim() || !sessionId}
-                  className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-xl px-6 py-3 font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 disabled:scale-100"
+                  className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-xl px-6 py-3 font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 disabled:scale-100 disabled:cursor-not-allowed"
                 >
                   <Send className="w-5 h-5" />
                 </button>
@@ -375,7 +424,6 @@ const MultiAgentSupportUI = () => {
             </div>
           </div>
 
-          {/* Agent Activity Panel */}
           <div className="bg-white/95 backdrop-blur-xl rounded-3xl border border-white/40 shadow-2xl flex flex-col overflow-hidden">
             <div className="p-4 bg-gradient-to-r from-indigo-600 to-purple-600">
               <h2 className="text-xl font-bold flex items-center gap-2 text-white">
@@ -422,7 +470,6 @@ const MultiAgentSupportUI = () => {
               })}
             </div>
 
-            {/* Agent Stats Footer */}
             <div className="p-4 bg-gray-50 border-t-2 border-gray-200">
               <div className="text-xs text-gray-600">
                 <div className="flex justify-between mb-1">
