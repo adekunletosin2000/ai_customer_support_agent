@@ -44,10 +44,12 @@ Instead of a single AI trying to do everything, we deploy *7 specialized agents*
 
 *Traditional Single-Model Chatbot*:
 
+
 User Input → One AI Model → Response (30-50% accuracy)
 
 
 *Our Multi-Agent System*:
+
 
 User Input → 7 Specialized Agents (parallel) → Orchestrated Response (85%+ accuracy)
 
@@ -66,17 +68,17 @@ User Input → 7 Specialized Agents (parallel) → Orchestrated Response (85%+ a
 ### System Overview
 
 
-┌──────────────────────────────────────────────────────────────┐<br>
-│                    PRESENTATION LAYER                        │<br>
-│                    React Frontend (Vite)                     │<br>
-│  • Real-time chat interface                                  │<br>
-│  • Agent activity visualization                              │<br>
-│  • Connection status monitoring                              │<br>
-│  • Quick action buttons                                      │<br>
-└───────────────────────┬──────────────────────────────────────┘<br>
-                        │ REST API (HTTP/JSON)<br>
-                        │ Port: 3000 → 5000<br>
-┌───────────────────────▼──────────────────────────────────────┐<br>
+┌──────────────────────────────────────────────────────────────┐
+│                    PRESENTATION LAYER                        │
+│                    React Frontend (Vite)                     │
+│  • Real-time chat interface                                  │
+│  • Agent activity visualization                              │
+│  • Connection status monitoring                              │
+│  • Quick action buttons                                      │
+└───────────────────────┬──────────────────────────────────────┘
+                        │ REST API (HTTP/JSON)
+                        │ Port: 3000 → 5000
+┌───────────────────────▼──────────────────────────────────────┐
 │                    APPLICATION LAYER                         │
 │                    Flask REST API                            │
 │  • POST /api/chat/start       - Initialize session           │
@@ -246,6 +248,7 @@ active_sessions[session_id]["conversation_history"].append({
 
 *Example Multi-Turn*:
 
+
 Turn 1:
 User: "My internet is slow"
 Agent: "Here are 3 troubleshooting steps..."
@@ -390,11 +393,11 @@ agentic-ai-royson-main/
 
 
 *Key Files*:
-- **app.py**: Flask REST API with session management
-- **main.py**: Agent definition with tools and prompting
-- **App.jsx**: React UI with real-time updates
-- **requirements.txt**: Python dependencies
-- **package.json**: Node.js dependencies
+- *app.py*: Flask REST API with session management
+- *main.py*: Agent definition with tools and prompting
+- *App.jsx*: React UI with real-time updates
+- *requirements.txt*: Python dependencies
+- *package.json*: Node.js dependencies
 
 ---
 
@@ -474,6 +477,7 @@ npm run dev
 
 *Agent Response*:
 
+
 I understand you're having Wi-Fi issues. Here's how to fix it:
 
 1. Unplug your router for 30 seconds and plug it back in
@@ -499,6 +503,7 @@ This should take about 5 minutes. Let me know if you need further help!
 
 *Agent Response*:
 
+
 I understand your concern about the duplicate charge. Here's what to do:
 
 1. Check your last invoice for the itemized charges
@@ -523,6 +528,7 @@ Would you like me to connect you with a billing specialist?
 6. *Confirmation*: "Should I connect you to a specialist?"
 
 *Agent Response*:
+
 
 I understand this is very frustrating, especially after multiple attempts. 
 I want to make sure you get the help you need right away.
@@ -762,8 +768,37 @@ Response:
 }
 
 
----
+#### 5. Health Check
+http
+GET /health
 
+Response:
+{
+  "status": "healthy",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "version": "1.0.0"
+}
+
+
+#### 6. Get Active Sessions (Admin)
+http
+GET /api/sessions/active
+
+Response:
+{
+  "active_sessions": 42,
+  "sessions": [
+    {
+      "session_id": "550e8400-e29b-41d4-a716-446655440000",
+      "user_id": "123e4567-e89b-12d3-a456-426614174000",
+      "message_count": 5,
+      "started_at": "2024-01-15T10:30:00Z"
+    }
+  ]
+}
+
+
+---
 
 ## 🤝 Contributing
 
@@ -790,9 +825,9 @@ MIT License - see LICENSE file
 
 ## 📞 Contact
 
-*Developer*: Royson salis
-*Email*: roysonsalis2005@gmail.com
-*GitHub*: https://github.com/Royson-salis-18
+*Developer*: Royson Salis<br>
+*Email*: roysonsalis2005@gmail.com<br>
+*GitHub*: https://github.com/Royson-salis-18<br>
 *LinkedIn*: https://www.linkedin.com/in/royson-salis-3ab32628a/
 
 ---
