@@ -68,7 +68,6 @@ User Input → 7 Specialized Agents (parallel) → Orchestrated Response (85%+ a
 ### System Overview
 
 
-
 ┌──────────────────────────────────────────────────────────────┐<br>
 │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PRESENTATION LAYER&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
 │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;React Frontend (Vite)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
@@ -120,6 +119,8 @@ User Input → 7 Specialized Agents (parallel) → Orchestrated Response (85%+ a
 │&nbsp;&nbsp;6. Escalation Check&nbsp;&nbsp;&nbsp;&nbsp;→ Evaluate if escalation needed&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
 │&nbsp;&nbsp;7. Human Escalation&nbsp;&nbsp;&nbsp;&nbsp;→ Call escalate_to_human() if req.&nbsp;&nbsp;&nbsp;│<br>
 └──────────────────────────────────────────────────────────────┘
+
+
 
 
 ### Request Flow Example
