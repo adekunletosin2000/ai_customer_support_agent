@@ -125,64 +125,63 @@ User Input → 7 Specialized Agents (parallel) → Orchestrated Response (85%+ a
 
 ### Request Flow Example
 
-*Scenario*: User says "My internet is down and I'm really frustrated!"
-
+<pre>
+<b>Scenario:</b> User says "My internet is down and I'm really frustrated!"<br><br>
 
 1. Frontend (App.jsx)
-   ├─ User types message
-   ├─ Validates session exists
-   └─ POST /api/chat/message
-       └─ Body: {session_id, user_id, message}
+    ├─ User types message
+    ├─ Validates session exists
+    └─ POST /api/chat/message
+        └─ Body: {session_id, user_id, message}
 
 2. Flask API (app.py)
-   ├─ Validates request
-   ├─ Checks session exists
-   ├─ Creates message object (Content + Part)
-   └─ Calls runner.run(user_id, session_id, message)
+    ├─ Validates request
+    ├─ Checks session exists
+    ├─ Creates message object (Content + Part)
+    └─ Calls runner.run(user_id, session_id, message)
 
 3. ADK Runner
-   ├─ Loads session context
-   ├─ Invokes LLM agent
-   ├─ Streams response events
-   └─ Returns final response
+    ├─ Loads session context
+    ├─ Invokes LLM agent
+    ├─ Streams response events
+    └─ Returns final response
 
 4. LLM Agent (main.py)
-   ├─ [Intent Detection]
-   │   → "User needs: technical help + expressing frustration"
-   │
-   ├─ [Classification]
-   │   → Category: "internet"
-   │
-   ├─ [Sentiment Analysis]
-   │   → Emotion: FRUSTRATED (high)
-   │   → Tone adjustment: Empathetic + Urgent
-   │
-   ├─ [Knowledge Search]
-   │   → Calls: search_knowledge_base("internet")
-   │   → Returns: ["Unplug router 30s", "Check cables", ...]
-   │
-   ├─ [Troubleshooting]
-   │   → Formats response with numbered steps
-   │   → Adds time estimates
-   │
-   ├─ [Escalation Check]
-   │   → High frustration detected = True
-   │   → Complex issue = False
-   │   → Decision: Offer human escalation
-   │
-   └─ [Response Generation]
-       → "I understand this is frustrating. Here's how to fix it:
-          1. Unplug your router for 30 seconds...
-          Would you like me to connect you to a specialist?"
+    ├─ [Intent Detection]
+    │     → "User needs: technical help + expressing frustration"
+    │
+    ├─ [Classification]
+    │     → Category: "internet"
+    │
+    ├─ [Sentiment Analysis]
+    │     → Emotion: FRUSTRATED (high)
+    │     → Tone adjustment: Empathetic + Urgent
+    │
+    ├─ [Knowledge Search]
+    │     → Calls: search_knowledge_base("internet")
+    │     → Returns: ["Unplug router 30s", "Check cables", ...]
+    │
+    ├─ [Troubleshooting]
+    │     → Formats response with numbered steps
+    │     → Adds time estimates
+    │
+    ├─ [Escalation Check]
+    │     → High frustration detected = True
+    │     → Complex issue = False
+    │     → Decision: Offer human escalation
+    │
+    └─ [Response Generation]
+          → "I understand this is frustrating. Here's how to fix it:
+             1. Unplug your router for 30 seconds...
+             Would you like me to connect you to a specialist?"
 
 5. Response Path
-   ├─ Agent → Runner → Flask → Frontend
-   ├─ Frontend displays message
-   └─ Shows agent activity (7 agents highlighted)
-
+    ├─ Agent → Runner → Flask → Frontend
+    ├─ Frontend displays message
+    └─ Shows agent activity (7 agents highlighted)
+</pre>
 
 ---
-
 ## 🚀 Key Features Implemented (ADK Concepts)
 
 ### ✅ 1. Agentic Workflow with Tool Use
