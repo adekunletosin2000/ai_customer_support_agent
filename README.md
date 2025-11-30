@@ -187,7 +187,7 @@ User Input → 7 Specialized Agents (parallel) → Orchestrated Response (85%+ a
 ### ✅ 1. Agentic Workflow with Tool Use
 *Implementation*: Agent autonomously decides when to call tools
 
-python
+```python
 # main.py - Tool definitions
 def search_knowledge_base(category: str) -> str:
     """Agent calls this to find solutions"""
@@ -203,7 +203,7 @@ def escalate_to_human(reason: str, customer_message: str,
     # Requires human-in-the-loop confirmation
     if not tool_context.tool_confirmation:
         tool_context.request_confirmation(...)
-
+```
 
 *Agentic Behavior*: Agent decides WHEN and HOW to use tools based on conversation context, not hardcoded rules.
 
@@ -212,7 +212,7 @@ def escalate_to_human(reason: str, customer_message: str,
 ### ✅ 2. Session Management & Memory
 *Implementation*: ADK InMemorySessionService + Flask session tracking
 
-python
+```python
 # main.py - Session service
 session_service = InMemorySessionService()
 
@@ -229,7 +229,7 @@ active_sessions[session_id] = {
     "conversation_history": [],
     "message_count": 0
 }
-
+```
 
 *Memory Behavior*: Agent remembers previous messages and builds on context.
 
@@ -238,34 +238,32 @@ active_sessions[session_id] = {
 ### ✅ 3. Multi-Turn Conversations
 *Implementation*: Conversation history maintained across requests
 
-python
+```python
 # app.py - History tracking
 active_sessions[session_id]["conversation_history"].append({
     "role": "user",
     "content": message,
     "timestamp": datetime.now().isoformat()
 })
+```
 
+*Example Multi-Turn:*
 
-*Example Multi-Turn*:
-
-
-Turn 1:
-User: "My internet is slow"
+Turn 1:  
+User: "My internet is slow"  
 Agent: "Here are 3 troubleshooting steps..."
 
-Turn 2:
-User: "I tried step 1 and 2"
-Agent: "Great! Since those didn't work, let's try step 3..."
-         (Agent remembers previous steps)
-
+Turn 2:  
+User: "I tried step 1 and 2"  
+Agent: "Great! Since those didn't work, let's try step 3..."  
+(Agent remembers previous steps)
 
 ---
 
 ### ✅ 4. Error Handling & Retry Logic
 *Implementation*: HTTP retry with exponential backoff
 
-python
+```python
 # main.py - Retry configuration
 retry_config = types.HttpRetryOptions(
     attempts=3,
@@ -278,20 +276,20 @@ model = Gemini(
     model_id="gemini-2.0-flash-exp",
     http_retry_options=retry_config
 )
+```
 
-
-*Behavior*: 
-- API call fails → Wait 1s → Retry
-- Fails again → Wait 2s → Retry
-- Fails again → Wait 4s → Retry
-- Final failure → User-friendly error message
+*Behavior*:  
+- API call fails → Wait 1s → Retry  
+- Fails again → Wait 2s → Retry  
+- Fails again → Wait 4s → Retry  
+- Final failure → User-friendly error message  
 
 ---
 
 ### ✅ 5. Human-in-the-Loop (Confirmation)
 *Implementation*: Tool confirmation workflow
 
-python
+```python
 # main.py - Escalation with confirmation
 def escalate_to_human(reason, message, tool_context):
     if not tool_context.tool_confirmation:
@@ -306,20 +304,20 @@ def escalate_to_human(reason, message, tool_context):
         # User confirmed - proceed with escalation
         agent_id = f"AGENT-{hash(message) % 1000:03d}"
         return f"Connected to {agent_id}"
+```
 
-
-*Workflow*:
-1. Agent detects escalation needed
-2. Asks user: "Should I connect you to a human agent?"
-3. Waits for confirmation
-4. Only escalates if user agrees
+*Workflow:*  
+1. Agent detects escalation needed  
+2. Asks user: "Should I connect you to a human agent?"  
+3. Waits for confirmation  
+4. Only escalates if user agrees  
 
 ---
 
 ### ✅ 6. Structured Output from Tools
 *Implementation*: Tools return consistent JSON schemas
 
-python
+```python
 # main.py - Structured response
 return json.dumps({
     "category": "internet",
@@ -330,7 +328,7 @@ return json.dumps({
     ],
     "found": True
 })
-
+```
 
 *Benefit*: Agent can reliably parse and use tool outputs in its responses.
 
@@ -339,7 +337,7 @@ return json.dumps({
 ### ✅ 7. Real-Time Streaming (Event Handling)
 *Implementation*: ADK Runner streams response events
 
-python
+```python
 # app.py - Event streaming
 responses = []
 for response_event in runner.run(user_id, session_id, new_message):
@@ -347,7 +345,7 @@ for response_event in runner.run(user_id, session_id, new_message):
     logger.info(f"Event #{len(responses)}: {type(response_event)}")
 
 final_response = responses[-1]
-
+```
 
 *Behavior*: Process events as they arrive, extract final response for user.
 
