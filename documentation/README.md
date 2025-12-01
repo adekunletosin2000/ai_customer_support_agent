@@ -346,7 +346,7 @@ This project is licensed under the MIT License.
 
 For questions or issues:
 - Open an issue on GitHub
-- Contact: your-roysonsalis2005@gmail.com
+- Contact: roysonsalis2005@gmail.com
 
 ## 🎉 Acknowledgments
 
